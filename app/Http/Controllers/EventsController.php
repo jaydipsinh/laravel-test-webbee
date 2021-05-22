@@ -3,12 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Event;
+use App\Models\Workshop;
 use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Routing\Controller as BaseController;
 use Illuminate\Support\Facades\Date;
-
 class EventsController extends BaseController
 {
     /*
@@ -97,9 +97,37 @@ class EventsController extends BaseController
      */
 
     public function getEventsWithWorkshops() {
-        throw new \Exception('implement in coding task 1');
+		
+		//$events = Event::leftjoin('workshops', 'workshops.event_id', '=', 'events.id')->select('events.*', 'workshops.*')->get()->toArray();		
+		$events = Event::get()->toArray();
+		$workshops = Workshop::get()->toArray();
+		
+		$workshopsByEvent = $finalData = array();
+		foreach($workshops as $wdata){
+			$workshopsByEvent[$wdata['event_id']][] = $wdata;
+		}
+		
+		$cnt = 0;
+		foreach($events as $event){
+			$finalData[$cnt] = $event;
+			$finalData[$cnt]['workshops'] = $workshopsByEvent[$event['id']];
+			$cnt++;
+		}
+		
+		try {
+            return json_encode($finalData);
+		} catch (\Exception $e) {
+			throw new \Exception('implement in coding task 1');
+		}
     }
 
+	/*
+	* warmupevents
+	*/
+	public function getWarmupevents() {
+		$eventsName = Event::get(['name'])->toArray();
+		return json_encode($eventsName);
+	}
 
     /*
     Requirements:
@@ -176,6 +204,28 @@ class EventsController extends BaseController
      */
 
     public function getFutureEventsWithWorkshops() {
-        throw new \Exception('implement in coding task 2');
+		
+		try {
+			
+			$date = date('Y-m-d');
+			//future event restriction
+			$events = Event::leftjoin('workshops', 'workshops.event_id', '=', 'events.id')->where('workshops.start', '>', $date)->groupBy(['events.id','events.name','events.created_at','events.updated_at'])->get('events.*')->toArray();
+			$workshops = Workshop::get()->toArray();
+			
+			$workshopsByEvent = $finalData = array();
+			foreach($workshops as $wdata){
+				$workshopsByEvent[$wdata['event_id']][] = $wdata;
+			}
+			$cnt = 0;
+			foreach($events as $event){
+				$finalData[$cnt] = $event;
+				$finalData[$cnt]['workshops'] = $workshopsByEvent[$event['id']];
+				$cnt++;
+			}		
+            return json_encode($finalData);
+		} catch (\Exception $e) {
+			throw new \Exception('implement in coding task 2');
+		}
+
     }
 }
